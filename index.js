@@ -38,7 +38,15 @@ class WebpackMockServicePlugin {
         this.port++
       }
       const mockDir = path.join(process.cwd(), this.mockDir)
-      this.createRoute(mockDir)
+      if (fs.existsSync(mockDir)) {
+        this.createRoute(mockDir)
+      } else {
+        fs.mkdir(mockDir, err => {
+          if (err) throw err
+          this.createRoute(mockDir)
+        })
+      }
+
 
       app.listen(this.port, () => {
         console.log(`mock服务启动成功： http://localhost:${this.port}`)
@@ -55,33 +63,31 @@ class WebpackMockServicePlugin {
     }
 
     createRoute(mockDir) {
-      if (fs.existsSync(mockDir)) {
-        fs.readdir(mockDir, (err, dirs) => {
-          if (err) throw err
-          dirs.forEach(dir => {
-            const files = fs.readdirSync(path.join(process.cwd(), `${this.mockDir}/${dir}`))
-            files.forEach(file => {
-              const textArr = file.match(/(\w+).?(\w+)?.json/)
-              if (textArr) {
-                // type -> 请求类型
-                const type = textArr[2] || 'get'
-                /**
-                 * 根据文件格式生成路由
-                 * userinfo/index.json -> /userinfo [get]
-                 * userinfo/update.post.json -> /userinfo/update [post]
-                 */
-                app.route(textArr[1] === 'index' ? `/${dir}` : `/${dir}/${textArr[1]}`)
-                  [type]((req, res) => {
-                  let mkdir = `${this.mockDir}/${dir}/${file}`
-                  const content = fs.readFileSync(path.join(process.cwd(), mkdir))
-                  const data = JSON.parse(content.toString().replace(/\n/g, ''))
-                  res.json(Mock.mock(data))
-                })
-              }
-            })
+      fs.readdir(mockDir, (err, dirs) => {
+        if (err) throw err
+        dirs.forEach(dir => {
+          const files = fs.readdirSync(path.join(process.cwd(), `${this.mockDir}/${dir}`))
+          files.forEach(file => {
+            const textArr = file.match(/(\w+).?(\w+)?.json/)
+            if (textArr) {
+              // type -> 请求类型
+              const type = textArr[2] || 'get'
+              /**
+               * 根据文件格式生成路由
+               * userinfo/index.json -> /userinfo [get]
+               * userinfo/update.post.json -> /userinfo/update [post]
+               */
+              app.route(textArr[1] === 'index' ? `/${dir}` : `/${dir}/${textArr[1]}`)
+                [type]((req, res) => {
+                let mkdir = `${this.mockDir}/${dir}/${file}`
+                const content = fs.readFileSync(path.join(process.cwd(), mkdir))
+                const data = JSON.parse(content.toString().replace(/\n/g, ''))
+                res.json(Mock.mock(data))
+              })
+            }
           })
         })
-      }
+      })
     }
 }
 
