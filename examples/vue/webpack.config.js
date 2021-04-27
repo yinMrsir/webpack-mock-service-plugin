@@ -22,6 +22,8 @@ module.exports = {
     },
     plugins: [
         new VueLoaderPlugin(),
-        new WebpackMockServicePlugin()
+        new WebpackMockServicePlugin({
+            port: 8000
+        })
     ]
 }
