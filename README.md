@@ -10,6 +10,8 @@ mockjs适用于webpack的插件
 
 3、支持mockjs格式生成数据
 
+4、支持get、post、delete、put方式请求
+
 ## 安装下载
 
 - 下载地址：https://github.com/yinMrsir/webpack-mock-service-plugin/releases
@@ -32,6 +34,19 @@ module.exports = {
         })
     ]
 }
+```
+
+目录结构：
+
+```
+├─ mock
+│  ├─ user
+│  │  ├─ index.json                        // [get]     /user
+│  │  ├─ del.delete.json                   // [delete]  /user/del
+│  │  ├─ update.put.json                   // [put]     /user/update
+│  │  └─ add.post.json                     // [post]    /user/add
+│  ├─ news
+│  │  └─ index.json                        // [get]     /news
 ```
 
 ## 交流 & 提问
