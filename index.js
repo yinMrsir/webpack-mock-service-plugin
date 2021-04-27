@@ -30,43 +30,44 @@ function portInUse(port) {
 class WebpackMockServicePlugin {
     constructor(options = {}) {
       this.port = options.port || 3000
-      this.mockDir = options.mockDir || 'mock'
+      this.mockDir = path.join(process.cwd(), options.mockDir || 'mock')
     }
 
     async apply(compile) {
       while (!(await portInUse(this.port))) {
         this.port++
       }
-      const mockDir = path.join(process.cwd(), this.mockDir)
-      if (fs.existsSync(mockDir)) {
-        this.createRoute(mockDir)
-      } else {
-        fs.mkdir(mockDir, err => {
-          if (err) throw err
-          this.createRoute(mockDir)
-        })
-      }
+      this.createRoute()
+      this.listen()
+    }
 
-
+    listen() {
       app.listen(this.port, () => {
         console.log(`mock服务启动成功： http://localhost:${this.port}`)
         /**
          * 开启监听目录，当目录或文件有更新时重新生成路由
          * @type {Watcher}
          */
-        const watcher = new Watcher(mockDir)
-        watcher.on('process', dir => {
-          this.createRoute(mockDir)
+        this.watcher = new Watcher(this.mockDir)
+        this.watcher.on('process', dir => {
+          // 之前没有创建目录没有绑定监听
+          // 所以创建了新的目录时要重新执行监听
+          this.watcher.start()
+          // 文件发生改变时重新生成路由
+          this.createRoute()
         })
-        watcher.start()
+        this.watcher.start()
       })
     }
 
-    createRoute(mockDir) {
-      fs.readdir(mockDir, (err, dirs) => {
+    createRoute() {
+      // 如果文件目录不存在，就创建该目录
+      !fs.existsSync(this.mockDir) && fs.mkdirSync(this.mockDir)
+      // 读取目录生成路由
+      fs.readdir(this.mockDir, (err, dirs) => {
         if (err) throw err
         dirs.forEach(dir => {
-          const files = fs.readdirSync(path.join(process.cwd(), `${this.mockDir}/${dir}`))
+          const files = fs.readdirSync(`${this.mockDir}/${dir}`)
           files.forEach(file => {
             const textArr = file.match(/(\w+).?(\w+)?.json/)
             if (textArr) {
@@ -80,7 +81,7 @@ class WebpackMockServicePlugin {
               app.route(textArr[1] === 'index' ? `/${dir}` : `/${dir}/${textArr[1]}`)
                 [type]((req, res) => {
                 let mkdir = `${this.mockDir}/${dir}/${file}`
-                const content = fs.readFileSync(path.join(process.cwd(), mkdir))
+                const content = fs.readFileSync(mkdir)
                 const data = JSON.parse(content.toString().replace(/\n/g, ''))
                 res.json(Mock.mock(data))
               })
