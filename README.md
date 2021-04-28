@@ -49,6 +49,10 @@ module.exports = {
 │  │  └─ index.json                        // [get]     /news
 ```
 
+## 注意事项
+
+- webpack-mock-service-plugin主要是为了在开发过程中，后端还未提供接口，前端开发者可以通过模拟接口进行开发，所以主要用于开发环境。
+
 ## 交流 & 提问
 
 提问：https://github.com/yinMrsir/webpack-mock-service-plugin/issues
