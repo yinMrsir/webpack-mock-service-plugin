@@ -16,9 +16,11 @@ mockjs适用于webpack的插件
 
 - 下载地址：https://github.com/yinMrsir/webpack-mock-service-plugin/releases
 
-- npm install webpack-mock-service-plugin
-
-- yarn add webpack-mock-service-plugin
+```
+npm install webpack-mock-service-plugin --save-dev
+or
+yarn add webpack-mock-service-plugin -D
+```
 
 ## 快速使用
 
