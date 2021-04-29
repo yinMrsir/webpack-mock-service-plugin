@@ -28,68 +28,88 @@ function portInUse(port) {
 }
 
 class WebpackMockServicePlugin {
-    constructor(options = {}) {
-      this.port = options.port || 3000
-      this.mockDir = path.join(process.cwd(), options.mockDir || 'mock')
-    }
+  constructor(options = {}) {
+    this.port = options.port || 3000
+    this.mockDir = path.join(process.cwd(), options.mockDir || 'mock')
+  }
 
-    async apply(compile) {
-      while (!(await portInUse(this.port))) {
-        this.port++
-      }
-      this.createRoute()
-      this.listen()
+  async apply(compile) {
+    while (!(await portInUse(this.port))) {
+      this.port++
     }
+    this.createRoute()
+    this.listen()
+  }
 
-    listen() {
-      app.listen(this.port, () => {
-        console.log(`mock服务启动成功： http://localhost:${this.port}`)
-        /**
-         * 开启监听目录，当目录或文件有更新时重新生成路由
-         * @type {Watcher}
-         */
-        this.watcher = new Watcher(this.mockDir)
-        this.watcher.on('process', dir => {
-          // 之前没有创建目录没有绑定监听
-          // 所以创建了新的目录时要重新执行监听
-          this.watcher.start()
-          // 文件发生改变时重新生成路由
-          this.createRoute()
-        })
+  listen() {
+    app.listen(this.port, () => {
+      console.info(`mock服务启动成功： http://localhost:${this.port}`)
+      /**
+       * 开启监听目录，当目录或文件有更新时重新生成路由
+       * @type {Watcher}
+       */
+      this.watcher = new Watcher(this.mockDir)
+      this.watcher.on('process', dir => {
+        // 文件发生改变时重新生成路由
+        this.createRoute()
+        // 之前没有创建目录没有绑定监听
+        // 所以创建了新的目录时要重新执行监听
         this.watcher.start()
       })
-    }
+      this.watcher.start()
+    })
+  }
 
-    createRoute() {
-      // 如果文件目录不存在，就创建该目录
-      !fs.existsSync(this.mockDir) && fs.mkdirSync(this.mockDir)
-      // 读取目录生成路由
-      fs.readdir(this.mockDir, (err, dirs) => {
-        if (err) throw err
-        dirs.forEach(dir => {
-          const files = fs.readdirSync(`${this.mockDir}/${dir}`)
-          files.forEach(file => {
-            const textArr = file.match(/(\w+).?(\w+)?.json/)
-            if (textArr) {
-              // type -> 请求类型
-              const type = textArr[2] || 'get'
-              /**
-               * 根据文件格式生成路由
-               * userinfo/index.json -> /userinfo [get]
-               * userinfo/update.post.json -> /userinfo/update [post]
-               */
-              app.route(textArr[1] === 'index' ? `/${dir}` : `/${dir}/${textArr[1]}`)
-                [type]((req, res) => {
-                let mkdir = `${this.mockDir}/${dir}/${file}`
-                const content = fs.readFileSync(mkdir)
-                const data = JSON.parse(content.toString().replace(/\n/g, ''))
-                res.json(Mock.mock(data))
-              })
-            }
-          })
-        })
+  readFile(filePath) {
+    const firstPosition = filePath.indexOf('/')
+    const lastPosition = filePath.lastIndexOf('/')
+    const file = filePath.substring(lastPosition + 1)
+    // 提取到上级目录 /user/login/index.json -> user/login
+    const parentDir = filePath.substring(firstPosition +1, lastPosition)
+    const textArr = file.match(/(\w+).?(\w+)?.json/)
+    if (textArr) {
+      // type -> 请求类型
+      const type = textArr[2] || 'get'
+      /**
+       * 根据文件格式生成路由
+       * userinfo/index.json -> /userinfo [get]
+       * userinfo/update.post.json -> /userinfo/update [post]
+       */
+      app.route(textArr[1] === 'index' ? `/${parentDir}` : `/${parentDir}/${textArr[1]}`)
+        [type]((req, res) => {
+        const content = fs.readFileSync(filePath)
+        if (content.toString()) {
+          const data = JSON.parse(content.toString().replace(/\n/g, ''))
+          res.json(Mock.mock(data))
+        } else {
+          res.json(Mock.mock({}))
+        }
       })
     }
+  }
+
+  readDir(mkdir) {
+    // 读取文件夹
+    fs.readdir(mkdir, (err, dirs) => {
+      if (err) throw err
+      // 便利文件夹中的每个文件
+      dirs.forEach(dir => {
+        // 如果是目录
+        if (fs.lstatSync(`${mkdir}/${dir}`).isDirectory()) {
+          this.readDir(`${mkdir}/${dir}`)
+        } else {
+          this.readFile(`${mkdir}/${dir}`)
+        }
+      })
+    })
+  }
+
+  createRoute() {
+    // 如果文件目录不存在，就创建该目录
+    !fs.existsSync(this.mockDir) && fs.mkdirSync(this.mockDir)
+    // 读取目录生成路由
+    this.readDir(this.mockDir)
+  }
 }
 
 module.exports = WebpackMockServicePlugin

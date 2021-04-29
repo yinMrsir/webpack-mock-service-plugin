@@ -48,6 +48,9 @@ module.exports = {
 │  │  ├─ update.put.json                   // [put]     /user/update
 │  │  └─ add.post.json                     // [post]    /user/add
 │  ├─ news
+│  │  ├─ hot
+│  │  │  ├─ update.post.json               // [post]    /news/hot/update
+│  │  │  └─ index.json                     // [get]     /news/hot
 │  │  └─ index.json                        // [get]     /news
 ```
 
