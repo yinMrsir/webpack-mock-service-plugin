@@ -66,25 +66,42 @@ class WebpackMockServicePlugin {
     const file = filePath.substring(lastPosition + 1)
     // 提取到上级目录 /user/login/index.json -> user/login
     const parentDir = filePath.substring(firstPosition +1, lastPosition)
-    const textArr = file.match(/(\w+).?(\w+)?.json/)
-    if (textArr) {
-      // type -> 请求类型
-      const type = textArr[2] || 'get'
-      /**
-       * 根据文件格式生成路由
-       * userinfo/index.json -> /userinfo [get]
-       * userinfo/update.post.json -> /userinfo/update [post]
-       */
-      app.route(textArr[1] === 'index' ? `/${parentDir}` : `/${parentDir}/${textArr[1]}`)
-        [type]((req, res) => {
-        const content = fs.readFileSync(filePath)
-        if (content.toString()) {
-          const data = JSON.parse(content.toString().replace(/\n/g, ''))
-          res.json(Mock.mock(data))
-        } else {
-          res.json(Mock.mock({}))
-        }
-      })
+    if (/\.js$/.test(filePath)) {
+      const textArr = file.match(/(\w+).?(\w+)?.js/)
+      if (textArr) {
+        const type = textArr[2] || 'get'
+        app.route(textArr[1] === 'index' ? `/${parentDir}` : `/${parentDir}/${textArr[1]}`)
+          [type]((req, res) => {
+            try {
+              res.json(Mock.mock(require(filePath)(req)))
+            } catch {
+              res.json(Mock.mock({}))
+            }
+          })
+      }
+    } else if(/\.json$/.test(filePath)) {
+      const textArr = file.match(/(\w+).?(\w+)?.json/)
+      if (textArr) {
+        // type -> 请求类型
+        const type = textArr[2] || 'get'
+        /**
+         * 根据文件格式生成路由
+         * userinfo/index.json -> /userinfo [get]
+         * userinfo/update.post.json -> /userinfo/update [post]
+         */
+        app.route(textArr[1] === 'index' ? `/${parentDir}` : `/${parentDir}/${textArr[1]}`)
+          [type]((req, res) => {
+          const content = fs.readFileSync(filePath)
+          if (content.toString()) {
+            const data = JSON.parse(content.toString().replace(/\n/g, ''))
+            res.json(Mock.mock(data))
+          } else {
+            res.json(Mock.mock({}))
+          }
+        })
+      }
+    } else {
+      console.log('不支持的文件格式')
     }
   }
 
