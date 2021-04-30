@@ -3,8 +3,11 @@ const Mock = require('mockjs')
 const fs = require('fs')
 const path = require('path')
 const net = require('net')
-const app = express()
 const Watcher = require('./Watcher.js')
+
+const app = express()
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 /**
  * 检测端口是否可以使用
