@@ -74,8 +74,8 @@ class WebpackMockServicePlugin {
           [type]((req, res) => {
             try {
               res.json(Mock.mock(require(filePath)(req)))
-            } catch {
-              res.json(Mock.mock({}))
+            } catch(e) {
+              res.json(Mock.mock({message: `${filePath} 不存在或内容为空`}))
             }
           })
       }
