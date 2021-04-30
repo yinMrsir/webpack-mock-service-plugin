@@ -26,6 +26,8 @@ class Watcher extends event.EventEmitter {
         // 是需要监听目录即可
         if (fs.lstatSync(`${watchDir}/${value}`).isDirectory()) {
           this.addFileDir(`${watchDir}/${value}`)
+        } else {
+          this.watchList.add(`${watchDir}/${value}`)
         }
       })
     }
