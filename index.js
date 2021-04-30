@@ -76,6 +76,8 @@ class WebpackMockServicePlugin {
         app.route(textArr[1] === 'index' ? `/${parentDir}` : `/${parentDir}/${textArr[1]}`)
           [type]((req, res) => {
             try {
+              // require只会加载文件一次，为了修改文件后能同步返回数据，先要从缓存中移除
+              delete require.cache[require.resolve(filePath)]
               res.json(Mock.mock(require(filePath)(req)))
             } catch(e) {
               res.json(Mock.mock({message: `${filePath} 不存在或内容为空`}))
