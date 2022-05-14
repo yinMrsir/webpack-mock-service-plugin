@@ -68,12 +68,13 @@ class WebpackMockServicePlugin {
     const lastPosition = filePath.lastIndexOf('/')
     const file = filePath.substring(lastPosition + 1)
     // 提取到上级目录 /user/login/index.json -> user/login
-    const parentDir = filePath.substring(firstPosition +1, lastPosition)
+    const parentDir = '/' + filePath.substring(firstPosition +1, lastPosition)
     if (/\.js$/.test(filePath)) {
       const textArr = file.match(/(\w+).?(\w+)?.js/)
       if (textArr) {
         const type = textArr[2] || 'get'
-        app.route(textArr[1] === 'index' ? `/${parentDir}` : `/${parentDir}/${textArr[1]}`)
+        const path = textArr[1] === 'index' ? `${parentDir.replace(this.mockDir, '')}` : `${parentDir.replace(this.mockDir, '')}/${textArr[1]}`;
+        app.route(path)
           [type]((req, res) => {
             try {
               // require只会加载文件一次，为了修改文件后能同步返回数据，先要从缓存中移除
