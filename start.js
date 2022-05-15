@@ -1,5 +1,5 @@
 const WebpackMockServicePlugin = require('./index.js');
 
-const mock = new WebpackMockServicePlugin();
+const mock = WebpackMockServicePlugin.getInstance();
 
 mock.apply();

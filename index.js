@@ -36,6 +36,13 @@ class WebpackMockServicePlugin {
     this.mockDir = path.join(process.cwd(), options.mockDir || 'mock')
   }
 
+  static getInstance(options) {
+    if (!WebpackMockServicePlugin._instance) {
+      WebpackMockServicePlugin._instance = new WebpackMockServicePlugin(options);
+    }
+    return WebpackMockServicePlugin._instance;
+  }
+
   async apply(compile) {
     while (!(await portInUse(this.port))) {
       this.port++
