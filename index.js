@@ -34,6 +34,7 @@ class WebpackMockServicePlugin {
   constructor(options = {}) {
     this.port = options.port || 3000
     this.mockDir = path.join(process.cwd(), options.mockDir || 'mock')
+    this.run = false
   }
 
   static getInstance(options) {
@@ -47,8 +48,11 @@ class WebpackMockServicePlugin {
     while (!(await portInUse(this.port))) {
       this.port++
     }
-    this.createRoute()
-    this.listen()
+    if(!this.run) {
+      this.createRoute()
+      this.listen()
+      this.run = true
+    } 
   }
 
   listen() {
